@@ -76,8 +76,8 @@ fn search_patterns(table: &Vec<Vec<char>>, start_row: usize, start_col: usize) -
 }
 
 fn main() {
-    //let filename = "test_input_data.txt";
-    let filename = "input_data.txt";
+    //let filename = "../input_data/aoc_04_test.txt";
+    let filename = "../input_data/aoc_04.txt";
     let mut total_occurences = 0;
 
     /* Verify presence of input file */
