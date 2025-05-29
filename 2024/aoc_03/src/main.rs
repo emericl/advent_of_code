@@ -31,8 +31,9 @@
  }
   
  fn main() {
-     //let filename = "test_input_data.txt";
-     //let filename = "input_data.txt";
+    let filename = "../input_data/aoc_03_test.txt";
+    //let filename = "../input_data/aoc_03.txt";
+
  
      /* Verify presence of report file */
      if Path::new(filename).is_file() == false {

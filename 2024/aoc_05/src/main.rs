@@ -59,8 +59,8 @@ fn create_updates(configs: &Vec<String>) -> Vec<Vec<i32>> {
 }
 
 fn main() {
-    //let filename = "test_input_data.txt";
-    let filename = "input_data.txt";
+    //let filename = "../input_data/aoc_05_test.txt";
+    let filename = "../input_data/aoc_05.txt";
 
     /* Verify presence of input file */
     if Path::new(filename).is_file() == false {

@@ -81,8 +81,8 @@ fn read_lines(filename: &str) -> Vec<String> {
 
 fn main() {
     let mut safe_reports = 0;
-    //let filename = "./src/test_input_data.txt";
-    let filename = "./src/input_data.txt";
+    //let filename = "../input_data/aoc_02_test.txt";
+    let filename = "../input_data/aoc_02.txt";
 
     /* Verify presence of report file */
     if Path::new(filename).is_file() == false {
