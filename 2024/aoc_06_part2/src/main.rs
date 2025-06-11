@@ -37,13 +37,6 @@ fn turn_right(direction: &mut Direction) {
     *direction = new_direction;
 }
 
-fn paint_world(world: &Vec<String>) {
-    for line in world {
-        println!("{}", line);
-    }
-    println!("");
-}
-
 fn get_unique_cell_id(world: &Vec<String>, x: &i32, y: &i32) -> i32 {
     let world_x_len = world[0].len() as i32;
     let world_y_len = world.len() as i32;
@@ -65,55 +58,53 @@ fn put_obstruction_in_world(world: &mut Vec<String>, obstruction_x: &mut i32, ob
     let world_y_len = world.len() as i32;
     let mut obstruction_placed = false;
 
-    if *obstruction_x == world_x_len || *obstruction_y == world_y_len {
-        return false;
-    }
-
     while obstruction_placed == false {
-        let current_cell = world[*obstruction_y as usize].chars().nth(*obstruction_x as usize).unwrap();
-        if current_cell == '#' || current_cell == '^' || current_cell == 'v' || current_cell == '<' || current_cell == '>' {
-            *obstruction_x += 1;
-            if *obstruction_x == world_x_len {
-                *obstruction_x = 0;
-                *obstruction_y += 1;
-
-                if *obstruction_y == world_y_len {
-                    println!("Could not place the first obstruction !");
-                    exit(1);
-                }
-            }
+        if *obstruction_x == world_x_len {
+            *obstruction_x = 0;
+            *obstruction_y += 1;
         }
-        else {
+        if *obstruction_y >= world_y_len {
+            *obstruction_x = world_x_len;
+            *obstruction_y = world_y_len;
+            return false;
+        }
+
+        let current_cell = world[*obstruction_y as usize].chars().nth(*obstruction_x as usize).unwrap();
+        if current_cell == '.' {
+            //println!("Obstruction placed at {:?},{:?}", obstruction_x, obstruction_y);
             obstruction_placed = true;
             change_world_cell_value(world, obstruction_x, obstruction_y, "O");
         }
-    }    
+        *obstruction_x += 1;
 
+
+    }    
     obstruction_placed
 }
 
 fn reset_world<'a>(world: &mut Vec<String>, guard: &mut &'a str, direction: &mut Direction, guard_position: &(i32, i32, Direction, &'a str)) {
     let world_x_len = world[0].len() as i32;
     let world_y_len = world.len() as i32;
-    let guard_c = guard.chars().next().unwrap_or('^');
-    
-    change_world_cell_value(world, &guard_position.0, &guard_position.1, guard_position.3);
-    *guard = guard_position.3;
-    *direction = guard_position.2;
 
+    /* Reset cells except obstacles */
     for x in 0..world_x_len {
         for y in 0..world_y_len {
             let current_cell = world[y as usize].chars().nth(x as usize).unwrap();
-            if current_cell != guard_c && current_cell != '#' {
+            if current_cell != '#' {
                 change_world_cell_value(world, &x, &y, ".");
             }
         }
     }
+
+    /* Put the gard at it original position */
+    change_world_cell_value(world, &guard_position.0, &guard_position.1, guard_position.3);
+    *guard = guard_position.3;
+    *direction = guard_position.2;
 }
 
 fn main() {
-    let filename = "../input_data/aoc_06_test.txt";
-    //let filename = "../input_data/aoc_06.txt";
+    //let filename = "../input_data/aoc_06_test.txt";
+    let filename = "../input_data/aoc_06.txt";
     let mut guard = "^";
 
     /* Verify presence of input file */
@@ -160,21 +151,18 @@ fn main() {
      * MOVE THE GUARD UNTIL IT LEAVES THE WORLD
      */
     let mut loop_count = 0;
-    let mut guard_disappeared = false;
     let mut all_mapped_tested = false;
         let mut obstacles_hit: HashMap<i32, Direction> = HashMap::new();
 
     /* Put the first obstruction on the world */
-    obstruction_x = 3; obstruction_y = 6; /* TODO Ligne a supprimer */
     if put_obstruction_in_world(&mut world, &mut obstruction_x, &mut obstruction_y) == false {
         println!("Could not put any obstruction in the world !");
         exit(1);
     }
-    paint_world(&world);
 
-    println!("Starting search of loops...\n");
+    println!("Starting search of loops...");
 
-    while guard_disappeared == false && all_mapped_tested == false {
+    while all_mapped_tested == false {
         /* Compute new position */
         match direction {
             Direction::UP => {
@@ -201,10 +189,24 @@ fn main() {
 
         /* Is guard outside the world ? */
         if new_x < 0 || new_y < 0 || new_x >= world_x_len || new_y >= world_y_len {
-            /* Indicates that the guard disappeared */
-            guard_disappeared = true;
+            /* Reset obstacle list */
+            obstacles_hit.clear();
 
-            paint_world(&world);
+            /* Reset the guard's position */
+            x = guard_position.0;
+            y = guard_position.1;
+            reset_world(&mut world, &mut guard, &mut direction, &guard_position);
+
+            /* Set the new obstruction */
+            if put_obstruction_in_world(&mut world, &mut obstruction_x, &mut obstruction_y) == false {
+                if obstruction_x == world_x_len && obstruction_y == world_y_len {
+                    all_mapped_tested = true;
+                }
+                else {
+                    println!("Unknown error !");
+                    exit(1);
+                }
+            }
         }
         else {
             /* Is there an obstacle ? */
@@ -213,17 +215,16 @@ fn main() {
                 let cell_id = get_unique_cell_id(&world, &new_x, &new_y);
                 /* If the obstacle is "hit" from the same direction twice, then you're in a loop */
                 if obstacles_hit.contains_key(&cell_id) && *obstacles_hit.get(&cell_id).unwrap() == direction {
-                    println!("Loop detected !!");
-                    paint_world(&world);
-
                     /* Increment the number of loops */
                     loop_count += 1;
 
-                    /* Reset the guard's position */
-                    reset_world(&mut world, &mut guard, &mut direction, &guard_position);
+                    /* Reset obstacle list */
+                    obstacles_hit.clear();
 
-                    /* Remove the current obstruction and set the new obstruction */
-                    change_world_cell_value(&mut world, &obstruction_x, &obstruction_y, ".");
+                    /* Reset the guard's position */
+                    x = guard_position.0;
+                    y = guard_position.1;
+                    reset_world(&mut world, &mut guard, &mut direction, &guard_position);
 
                     /* Set the new obstruction */
                     if put_obstruction_in_world(&mut world, &mut obstruction_x, &mut obstruction_y) == false {
@@ -235,9 +236,6 @@ fn main() {
                             exit(1);
                         }
                     }
-                    else {
-                        change_world_cell_value(&mut world, &obstruction_x, &obstruction_y, "O");
-                    }
                 }
                 /* Else */
                 else {
@@ -247,9 +245,6 @@ fn main() {
                     /* Change direction by turning right */
                     turn_right(&mut direction);
                     /* Do not change position of the guard */
-                    println!("Hashmap: {:?}", obstacles_hit);
-                    paint_world(&world);
-                    
                 }
             }
             else {
@@ -299,5 +294,7 @@ fn main() {
             }
         }
     }
+
+    println!("Loops detected: {:?}", loop_count);
 
 }
