@@ -25,6 +25,18 @@ fn change_world_cell_value(world: &mut Vec<String>, x: &i32, y: &i32, value: &st
         world[*y as usize].replace_range(*x as usize..*x as usize+1, value);
 }
 
+fn get_unique_cell_id(world: &Vec<String>, x: &i32, y: &i32) -> i32 {
+    let world_x_len = world[0].len() as i32;
+    let world_y_len = world.len() as i32;
+
+    if *x < world_x_len && *y < world_y_len {
+        *y * world_x_len + *x
+    }
+    else {
+        -1 as i32
+    }
+}
+
 fn main() {
     //let filename = "../input_data/aoc_08_test.txt";
     let filename = "../input_data/aoc_08.txt";
@@ -67,7 +79,7 @@ fn main() {
     /*****************************************************
      * COMPUTE ANTINODES FOR EACH TYPE OF ANTENNA
      */
-     let mut anti_nodes: usize = 0;
+     let mut antinodes_list: Vec<i32> = Vec::new();
      for (freq, antennas) in antenna_list {
         println!("Computing anti-nodes for frequency {:?}...", freq);
 
@@ -95,16 +107,26 @@ fn main() {
                 /* Count the anti-node if it's inside the world and the anti-node is at a same place of an antenna */
                 if anti_node_x > -1 && anti_node_x < antenna_map[0].len() as i32 &&
                    anti_node_y > -1 && anti_node_y < antenna_map.len() as i32 {
-                    let current_cell = antenna_map[anti_node_y as usize].chars().nth(anti_node_x as usize).unwrap();
-
-                    if current_cell == '.' || current_cell == '#' {
-                        anti_nodes += 1;
-                        change_world_cell_value(&mut antenna_map, &anti_node_x, &anti_node_y, "#");
+                    
+                    /* If the antinode has not already be pinned, pin it */
+                    let unique_id = get_unique_cell_id(&antenna_map, &anti_node_x, &anti_node_y);
+                    if unique_id != -1 && antinodes_list.contains(&unique_id) == false {
+                        antinodes_list.push(unique_id);
+                        let current_cell = antenna_map[anti_node_y as usize].chars().nth(anti_node_x as usize).unwrap();
+                        if current_cell == '.' {
+                            change_world_cell_value(&mut antenna_map, &anti_node_x, &anti_node_y, "#");
+                        }
                     }
+
+
                 }
             }
         }
     }
 
-    println!("Number of anti-nodes detected: {:?}", anti_nodes);
+    for line in antenna_map {
+        println!("{:?}", line);
+    }
+
+    println!("Number of anti-nodes detected: {:?}", antinodes_list.len());
 }
