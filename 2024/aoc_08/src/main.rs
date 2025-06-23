@@ -81,14 +81,14 @@ fn main() {
      */
      let mut antinodes_list: Vec<i32> = Vec::new();
      for (freq, antennas) in antenna_list {
-        println!("Computing anti-nodes for frequency {:?}...", freq);
+        println!("Computing antinodes for frequency {:?}...", freq);
 
-        /* If less than 2 antennas, not anti-node possible */
+        /* If less than 2 antennas, not antinode possible */
         if antennas.len() < 2 {
             continue;
         }
 
-        /* Compute anti-node(s) for each antenna against other antennas */
+        /* Compute antinode(s) for each antenna against other antennas */
         for (idx_ant, antenna) in antennas.iter().enumerate() {
             for (idx_oant, oantenna) in antennas.iter().enumerate() {
                 /* It's the same antenna, skipping */
@@ -100,11 +100,11 @@ fn main() {
                 let dist_x = antenna.pos_x - oantenna.pos_x;
                 let dist_y = antenna.pos_y - oantenna.pos_y;
 
-                /* Compute anti-node position with the distance between the two antennas */
+                /* Compute antinode position with the distance between the two antennas */
                 let anti_node_x = antenna.pos_x + dist_x;
                 let anti_node_y = antenna.pos_y + dist_y;
 
-                /* Count the anti-node if it's inside the world and the anti-node is at a same place of an antenna */
+                /* Count the antinode if it's inside the world and the antinode is at a same place of an antenna */
                 if anti_node_x > -1 && anti_node_x < antenna_map[0].len() as i32 &&
                    anti_node_y > -1 && anti_node_y < antenna_map.len() as i32 {
                     
@@ -128,5 +128,5 @@ fn main() {
         println!("{:?}", line);
     }
 
-    println!("Number of anti-nodes detected: {:?}", antinodes_list.len());
+    println!("Number of antinodes detected: {:?}", antinodes_list.len());
 }
