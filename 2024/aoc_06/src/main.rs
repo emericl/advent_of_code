@@ -1,5 +1,5 @@
 /* ADVENT OF CODE
- * See: https://adventofcode.com/2024/day/5
+ * See: https://adventofcode.com/2024/day/6
  */
 use std::fs::read_to_string;
 use std::path::Path;
