@@ -90,6 +90,11 @@ fn main() {
             for _ in 0..block_count as i32 {
                 disk_data.push(file_id);
             }
+
+            /* Store disk information */
+            files.push(DiskEntry{idx: file_id as usize, block_count: block_count as usize, is_file: is_file});
+
+            /* Increment file identifier */
             file_id += 1;
         }
         else {
@@ -98,10 +103,10 @@ fn main() {
             for _ in 0..block_count as i32 {
                 disk_data.push(-1);
             }
-        }
 
-        /* Store disk information */
-        files.push(DiskEntry{idx: idx, block_count: block_count as usize, is_file: is_file});
+            /* Store disk information */
+            files.push(DiskEntry{idx: usize::MAX, block_count: block_count as usize, is_file: is_file});
+        }
     }
 
     /* Store the last file id for future use */
@@ -118,11 +123,13 @@ fn main() {
     let mut file_id: i32 = last_file_id;
     let mut read_idx: i32;
     while file_id > 1 {
+        println!("Searching file_id {file_id}...");
         /* Find the file with current file ID in the disk */
         read_idx = (files.len() - 1) as i32;
         while read_idx > -1 {
             if files[read_idx as usize].is_file == true &&
                files[read_idx as usize].idx == file_id as usize {
+                println!("File_id {file_id} found at index {read_idx}.");
                 break;
             }
             read_idx = read_idx - 1;
@@ -133,10 +140,9 @@ fn main() {
             /* Look for a place where to store the file */
             match search_place_for_disk_entry(&files, files[read_idx as usize].block_count) {
                 Some(idx) => {
-                    println!("File #{file_id} will be moved at index {idx} not be moved.");
+                    println!("File #{file_id} will be moved at index {idx}.");
                     /* Move the file at the new location */
                     move_disk_entry(&mut files, read_idx as usize, idx);
-                    println!("files: {:?}", files);
                 },
                 None => {
                     println!("File #{file_id} could not be moved.");
@@ -150,16 +156,17 @@ fn main() {
         file_id = file_id - 1;
     }
 
-    println!("ICI");
-
     /*****************************************************
      * COMPUTE THE CHECKSUM OF THE DISK
      */
     let mut checksum: i64 = 0;
     disk_data.clear();
+println!("disk_data: {:?}", disk_data);
     for e in files {
         if e.is_file == true {
-            disk_data.push(file_id);
+            for _ in 0..e.block_count {
+                disk_data.push(e.idx as i32);
+            }
         }
         else {
             disk_data.push(-1);
