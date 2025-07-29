@@ -11,6 +11,22 @@ struct DiskEntry {
     is_file: bool
 }
 
+fn dbg_print_disk_data(files: & Vec<DiskEntry>) {
+    let mut disk_data: Vec<i32> = Vec::new();
+
+    for e in files {
+        for _ in 0..e.block_count {
+            if e.is_file == true {
+                disk_data.push(e.idx as i32);
+            }
+            else {
+                disk_data.push(-1);
+            }
+        }
+    }
+    println!("disk_data(len: {:?}): {:?}", disk_data.len(), disk_data);
+}
+
 fn read_lines(filename: &str) -> Vec<String> {
     let mut result = Vec::new();
 
@@ -37,9 +53,8 @@ fn move_disk_entry(list: &mut Vec<DiskEntry>, from: usize, to: usize) {
     /* First, we clone the entry to be moved from the Vec */
     let data_entry = list[from].clone();
 
-    println!("moving: {:?}", data_entry);
-
     /* Then, we replace the entry to be moved by free-space */
+    list[from].idx = usize::MAX;
     list[from].is_file = false;
 
     /* If data is exactly the size of free-space */
@@ -50,15 +65,19 @@ fn move_disk_entry(list: &mut Vec<DiskEntry>, from: usize, to: usize) {
     else {
         /* Reduce the size of free-space */
         list[to].block_count = list[to].block_count - data_entry.block_count;
-    }
 
-    /* Insert data before free-space */
-    list.insert(to, data_entry);
+        /* Insert the data before the remaining free-space */
+        list.insert(to, data_entry);
+    }
 }
 
 fn main() {
-    let filename = "../input_data/aoc_09_test.txt";
-    //let filename = "../input_data/aoc_09.txt";
+    let filename = if cfg!(debug_assertions) {
+        "../input_data/aoc_09_test.txt"
+    }
+    else {
+        "../input_data/aoc_09.txt"
+    };
 
     /* Verify presence of input file */
     if Path::new(filename).is_file() == false {
@@ -112,10 +131,6 @@ fn main() {
     /* Store the last file id for future use */
     let last_file_id: i32 = file_id - 1;
 
-    println!("disk_data: {:?}", disk_data);
-    println!("files: {:?}", files);
-    println!("last_file_id: {:?}", last_file_id);
-
     /*****************************************************
      * COMPACT ALL THE FILES TO THE BEGINING OF THE DISK
      */
@@ -140,16 +155,22 @@ fn main() {
             /* Look for a place where to store the file */
             match search_place_for_disk_entry(&files, files[read_idx as usize].block_count) {
                 Some(idx) => {
-                    println!("File #{file_id} will be moved at index {idx}.");
-                    /* Move the file at the new location */
-                    move_disk_entry(&mut files, read_idx as usize, idx);
+                    if idx < read_idx as usize {
+                        println!("File #{file_id} will be moved at index {idx}.");
+                        /* Move the file at the new location */
+                        move_disk_entry(&mut files, read_idx as usize, idx);
+                    }
+                    else {
+                        println!("File #{file_id} could not be moved.");
+                    }
                 },
                 None => {
                     println!("File #{file_id} could not be moved.");
-                    file_id = file_id - 1;
-                    continue;
                 },
             }
+        }
+        else {
+            panic!("BUG: file_id not found !");
         }
         
         /* Going to next file */
@@ -159,19 +180,19 @@ fn main() {
     /*****************************************************
      * COMPUTE THE CHECKSUM OF THE DISK
      */
-    let mut checksum: i64 = 0;
-    disk_data.clear();
-println!("disk_data: {:?}", disk_data);
-    for e in files {
+    let mut checksum = 0_i64;
+    let mut idx: usize = 0;
+
+    for e in &files {
         if e.is_file == true {
             for _ in 0..e.block_count {
-                disk_data.push(e.idx as i32);
+                checksum = checksum + (idx * e.idx) as i64;
+                idx = idx + 1;
             }
         }
         else {
-            disk_data.push(-1);
+            idx += e.block_count;
         }
     }
-println!("disk_data: {:?}", disk_data);
     println!("Checkum: {:?}", checksum);
 }
