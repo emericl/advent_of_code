@@ -176,6 +176,63 @@ fn change_position(grid: &Grid<usize>, c: &Coordinate, direction: &Direction) ->
 //     }
 //}
 
+fn search_paths(grid: &Grid<usize>, start: &Coordinate) -> Vec<Vec<Coordinate>> {
+    let mut path_list: Vec<Vec<Coordinate>> = Vec::new();
+    let mut coord_to_visit: VecDeque<PathState> = VecDeque::new();
+
+    /* Add starting point to current path */
+    coord_to_visit.push_back(PathState{position: *start, path: vec![*start]});
+
+    /* While there is coordinates to visit */
+    while coord_to_visit.len() > 0 {
+        let state = match coord_to_visit.pop_front() {
+            Some(c) => c,
+            None => {
+                continue
+            },
+        };
+        let path = state.path;
+        let coord    = state.position;
+
+        /* If the current coordinate is the end of the path */
+        if grid.get_value(&coord) == 9 {
+            /* We add the current path to the list of paths */
+            path_list.push(path.clone());
+        }
+        /* Else */
+        else {
+            /* Verify all directions */
+            let possible_dirs = grid.get_possible_directions(&coord);
+
+            /* If there are possible directions to go */
+            /* Note: this is not strictly necessary, but it avoids unnecessary iterations */
+            /* If there are no possible directions, we just continue */
+            if possible_dirs.len() > 0 {
+                for direction in possible_dirs {
+                    let new_coord =  match change_position(&grid, &coord, &direction) {
+                        Some(c) => c,
+                        None => {
+                            continue
+                        },
+                    };
+
+                    /* If the next coordinate is the next cell value (+1) */
+                    if grid.get_value(&new_coord) == grid.get_value(&coord) + 1 {
+                        /* Add the new position to the path and add it to coordinates to visit */
+                        if !path.contains(&new_coord) {
+                            let mut new_path = path.clone();
+                            new_path.push(new_coord);
+                            coord_to_visit.push_back(PathState{position: new_coord, path: new_path.clone()});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    path_list
+}
+
 fn main() {
     let filename = if cfg!(debug_assertions) {
         "../input_data/aoc_10_test.txt"
@@ -217,69 +274,13 @@ fn main() {
 
     println!("Starting search of paths...");
 
-    while starting_points.len() > 0 {
-        let mut path_list: HashSet<Vec<Coordinate>> = HashSet::new();
-        let mut coord_to_visit: VecDeque<PathState> = VecDeque::new();
-
-        /* Retrieve a starting point */
-        let coord = match starting_points.pop() {
-            Some(c) => c,
-            None => continue,
-        };
-
-        /* Add starting point to current path */
-        coord_to_visit.push_back(PathState{position: coord.clone(), path: Vec::from([coord.clone()])});
-
-        /* While there is coordinates to visit */
-        while coord_to_visit.len() > 0 {
-            let state = match coord_to_visit.pop_front() {
-                Some(c) => c,
-                None => {
-                    continue
-                },
-            };
-            let path = state.path;
-            let coord    = state.position;
-
-            /* If the current coordinate is the end of the path */
-            if grid.get_value(&coord) == 9 {
-                /* We add the current path to the list of paths */
-                path_list.insert(path.clone());
-            }
-            /* Else */
-            else {
-                /* Verify all directions */
-                let possible_dirs = grid.get_possible_directions(&coord);
-
-                /* If there are possible directions to go */
-                /* Note: this is not strictly necessary, but it avoids unnecessary iterations */
-                /* If there are no possible directions, we just continue */
-                if possible_dirs.len() > 0 {
-                    for direction in possible_dirs {
-                        let new_coord =  match change_position(&grid, &coord, &direction) {
-                            Some(c) => c,
-                            None => {
-                                continue
-                            },
-                        };
-
-                        /* If the next coordinate is the next cell value (+1) */
-                        if grid.get_value(&new_coord) == grid.get_value(&coord) + 1 {
-                            /* Add the new position to the path and add it to coordinates to visit */
-                            if !path.contains(&new_coord) {
-                                let mut new_path = path.clone();
-                                new_path.push(new_coord);
-                                coord_to_visit.push_back(PathState{position: new_coord, path: new_path.clone()});
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    for start in starting_points {        
+        /* Search paths from the current starting point */
+        let paths = search_paths(&grid, &start);
 
         /* List all the unique destinations as many paths can lead to the same destination */
         let mut unique_destinations: HashSet<Coordinate> = HashSet::new();
-        for p in &path_list {
+        for p in &paths {
             unique_destinations.insert(p[p.len() - 1].clone());
         }
 
